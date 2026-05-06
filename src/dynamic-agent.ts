@@ -52,7 +52,8 @@ export function generateAgentId(chatType: "dm" | "group", peerId: string, accoun
  * **shouldUseDynamicAgent (检查是否使用动态 Agent)**
  *
  * 根据配置和发送者信息判断是否应使用动态 Agent。
- * 管理员（adminUsers）始终绕过动态路由，使用主 Agent。
+ * 管理员（adminUsers）在私聊中绕过动态路由，使用主 Agent。
+ * 群聊始终按群路由，避免同一个群被管理员和普通用户拆成两个 workspace。
  */
 export function shouldUseDynamicAgent(params: {
     chatType: "dm" | "group";
@@ -66,12 +67,12 @@ export function shouldUseDynamicAgent(params: {
         return false;
     }
 
-    // 管理员绕过动态路由
+    // 管理员仅在私聊中绕过动态路由。
     const sender = String(senderId).trim().toLowerCase();
     const isAdmin = dynamicConfig.adminUsers.some(
         (admin) => admin.trim().toLowerCase() === sender
     );
-    if (isAdmin) {
+    if (chatType === "dm" && isAdmin) {
         return false;
     }
 
@@ -80,5 +81,4 @@ export function shouldUseDynamicAgent(params: {
     }
     return dynamicConfig.dmCreateAgent;
 }
-
 

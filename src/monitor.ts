@@ -41,6 +41,7 @@ import {
 } from "./const.js";
 import { checkDmPolicy } from "./dm-policy.js";
 import { processDynamicRouting } from "./dynamic-routing.js";
+import { buildWeComGroupReplyBehavior } from "./group-reply-behavior.js";
 import { checkGroupPolicy } from "./group-policy.js";
 import type { WeComMonitorOptions, MessageState } from "./interface.js";
 import {
@@ -272,6 +273,7 @@ function buildMessageContext(
   });
 
   // 构建标准消息上下文
+  const groupReplyBehavior = buildWeComGroupReplyBehavior(chatType);
   const ctxPayload = core.channel.reply.finalizeInboundContext({
     Body: messageBody,
     RawBody: messageBody,
@@ -299,6 +301,7 @@ function buildMessageContext(
     OriginatingTo: `${CHANNEL_ID}:${chatId}`,
 
     CommandAuthorized: true,
+    WasMentioned: groupReplyBehavior.wasMentioned,
 
     ResponseUrl: body.response_url,
     ReqId: frame.headers.req_id,
@@ -546,12 +549,13 @@ async function routeAndDispatchMessage(params: {
       ctx: ctxPayload,
       cfg: config,
       replyOptions: {
+        sourceReplyDeliveryMode: buildWeComGroupReplyBehavior(chatType).sourceReplyDeliveryMode,
         // 打印 LLM 返回的原始分片内容（在 openclaw 核心对 MEDIA: 指令解析之前），
         // 用于排查流式分片导致 MEDIA 指令被切断、识别丢失等问题
         // onPartialReply: (payload: unknown) => {
         // runtime.log?.(`[openclaw -> plugin][partial] payload=${JSON.stringify(payload)}`);
         // },
-      },
+      } as any,
       dispatcherOptions: {
         onReplyStart: async () => {
           if (!isShowThink && state.streamId && !state.accumulatedText) {

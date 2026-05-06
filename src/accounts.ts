@@ -1,10 +1,15 @@
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/core";
 import { CHANNEL_ID } from "./const.js";
+import { DEFAULT_ACCOUNT_ID } from "./openclaw-compat.js";
 import type { WeComConfig, WeComAccountConfig, ResolvedWeComAccount } from "./utils.js";
 import { DefaultWsUrl } from "./utils.js";
 import type { ResolvedAgentAccount } from "./types/account.js";
 import type { WecomAgentConfig } from "./types/config.js";
+
+function normalizeAccountId(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  return normalized || DEFAULT_ACCOUNT_ID;
+}
 
 // ============================================================================
 // 多账号配置结构
