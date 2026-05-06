@@ -40,7 +40,7 @@ import {
   SCENE_WECOM_OPENCLAW,
 } from "./const.js";
 import { checkDmPolicy } from "./dm-policy.js";
-import { processDynamicRouting } from "./dynamic-routing.js";
+import { processDynamicRouting, type AgentRoute } from "./dynamic-routing.js";
 import { buildWeComGroupReplyBehavior } from "./group-reply-behavior.js";
 import { checkGroupPolicy } from "./group-policy.js";
 import type { WeComMonitorOptions, MessageState } from "./interface.js";
@@ -52,7 +52,6 @@ import {
 import { uploadAndSendMedia } from "./media-uploader.js";
 import { parseMessageContent, type MessageBody } from "./message-parser.js";
 import { sendWeComReply, sendWeComReplyNonBlocking, StreamExpiredError } from "./message-sender.js";
-import { getDefaultMediaLocalRoots, resolveStateDir } from "./openclaw-compat.js";
 import { getWeComRuntime } from "./runtime.js";
 import {
   setWeComWebSocket,
@@ -118,32 +117,14 @@ function buildMediaOversizeHintText(err: MediaOversizeError): string {
 // ============================================================================
 
 /**
- * 在 getDefaultMediaLocalRoots() 基础上，将 stateDir 本身也加入白名单，
- * 并合并用户在 WeComConfig 中配置的自定义 mediaLocalRoots。
+ * 构造企业微信媒体发送的本地文件白名单。
  *
- * getDefaultMediaLocalRoots() 仅包含 stateDir 下的子目录（media/agents/workspace/sandboxes），
- * 但 agent 生成的文件可能直接放在 stateDir 根目录下（如 ~/.openclaw-dev/1.png），
- * 因此需要将 stateDir 本身也加入白名单以避免 LocalMediaAccessError。
- *
- * 用户可在 openclaw.json 中配置：
- * {
- *   "channels": {
- *     "wecom": {
- *       "mediaLocalRoots": ["~/Downloads", "~/Documents"]
- *     }
- *   }
- * }
+ * 默认只允许当前 agent workspace，避免群 agent 通过 MEDIA: 发送主 workspace
+ * 或其它群 workspace 里的文件。用户仍可通过 mediaLocalRoots 显式追加目录。
  */
-async function getExtendedMediaLocalRoots(config?: WeComConfig): Promise<string[]> {
-  // 从兼容层获取默认白名单（内部已处理低版本 SDK 的 fallback）
-  const defaults = await getDefaultMediaLocalRoots();
-  const roots: string[] = [...defaults];
+export function getScopedMediaLocalRoots(config: WeComConfig | undefined, agentWorkspaceDir: string): string[] {
+  const roots: string[] = [path.resolve(agentWorkspaceDir)];
 
-  const stateDir = path.resolve(resolveStateDir());
-  if (!roots.includes(stateDir)) {
-    roots.push(stateDir);
-  }
-  // 合并用户在 WeComConfig 中配置的自定义路径
   if (config?.mediaLocalRoots) {
     for (const r of config.mediaLocalRoots) {
       const resolved = path.resolve(r.replace(/^~(?=\/|$)/, os.homedir()));
@@ -329,6 +310,8 @@ interface DeliverContext {
   frame: WsFrame;
   state: MessageState;
   account: ResolvedWeComAccount;
+  config: OpenClawConfig;
+  route: AgentRoute;
   runtime: RuntimeEnv;
 }
 
@@ -371,10 +354,11 @@ async function sendThinkingReply(params: {
  * 因此所有媒体统一走 aibot_send_msg 主动发送。
  */
 async function sendMediaBatch(ctx: DeliverContext, mediaUrls: string[]): Promise<void> {
-  const { wsClient, frame, state, account, runtime } = ctx;
+  const { wsClient, frame, state, account, config, route, runtime } = ctx;
   const body = frame.body as MessageBody;
   const chatId = body.chatid || body.from.userid;
-  const mediaLocalRoots = await getExtendedMediaLocalRoots(account.config);
+  const agentWorkspaceDir = getWeComRuntime().agent.resolveAgentWorkspaceDir(config, route.agentId);
+  const mediaLocalRoots = getScopedMediaLocalRoots(account.config, agentWorkspaceDir);
 
   runtime.log?.(
     `[wecom][debug] mediaLocalRoots=${JSON.stringify(mediaLocalRoots)}, mediaUrls=${JSON.stringify(mediaUrls)}`,
@@ -512,7 +496,7 @@ async function routeAndDispatchMessage(params: {
     onCleanup,
   } = params;
   const core = getWeComRuntime();
-  const ctx: DeliverContext = { wsClient, frame, state, account, runtime };
+  const ctx: DeliverContext = { wsClient, frame, state, account, config, route, runtime };
 
   // 防止 onCleanup 被多次调用（onError 回调与 catch 块可能重复触发）
   let cleanedUp = false;
@@ -593,7 +577,7 @@ async function routeAndDispatchMessage(params: {
             try {
               await sendMediaBatch(ctx, mediaUrls);
             } catch (mediaErr) {
-              // sendMediaBatch 内部异常（如 getDefaultMediaLocalRoots 不可用等）
+              // sendMediaBatch 内部异常（如本地媒体路径解析失败等）
               // 必须标记 state，否则 finishThinkingStream 会显示"处理完成"误导用户
               state.hasMediaFailed = true;
               const errMsg = String(mediaErr);
