@@ -1,6 +1,16 @@
 import type { PluginRuntime } from "openclaw/plugin-sdk/core";
-import { createPluginRuntimeStore } from "openclaw/plugin-sdk/runtime-store";
 
-const { setRuntime: setWeComRuntime, getRuntime: getWeComRuntime } = createPluginRuntimeStore<PluginRuntime>("WeCom runtime not initialized");
+let runtime: PluginRuntime | undefined;
+
+function setWeComRuntime(nextRuntime: PluginRuntime): void {
+  runtime = nextRuntime;
+}
+
+function getWeComRuntime(): PluginRuntime {
+  if (!runtime) {
+    throw new Error("WeCom runtime not initialized");
+  }
+  return runtime;
+}
 
 export { setWeComRuntime, getWeComRuntime };

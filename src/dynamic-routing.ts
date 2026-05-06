@@ -96,7 +96,10 @@ export function processDynamicRouting(params: DynamicRoutingParams): DynamicRout
     log?.(`[dynamic-routing] 原始路由信息: agentId=${route.agentId}, matchedBy=${route.matchedBy}, sessionKey=${route.sessionKey}`);
     
     const targetAgentId = generateAgentId(chatType, chatId, accountId);
-    const targetSessionKey = `agent:${targetAgentId}:wecom:${accountId}:${chatType}:${chatId}`;
+    const targetSessionKey =
+      chatType === "group"
+        ? `agent:${targetAgentId}:wecom:group:${chatId}`
+        : `agent:${targetAgentId}:wecom:${accountId}:direct:${chatId}`;
 
     log?.(`[dynamic-routing] 🔄 路由注入: agentId=${targetAgentId}, sessionKey=${targetSessionKey}`);
 

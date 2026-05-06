@@ -78,11 +78,23 @@ const plugin = {
       if (ctx?.channelId !== CHANNEL_ID) {
         return;
       }
+
+      const workspaceContext =
+        ctx.workspaceDir
+          ? [
+              "企业微信当前运行上下文：",
+              `- 当前 agentId: ${ctx.agentId ?? "(unknown)"}`,
+              `- 当前默认工作区/cwd: ${ctx.workspaceDir}`,
+              "- 回答工作区问题时，以这里的当前默认工作区为准；不要把 agents.defaults.workspace 当成当前会话的默认 cwd。",
+            ].join("\n")
+          : undefined;
+
       return {
         appendSystemContext: [
+          workspaceContext,
           "重要：涉及发送图片/视频/语音/文件给用户时，请务必使用 `MEDIA:` 指令。详见  wecom-send-media 这个 skill（技能）。",
           "重要：当需要向用户发送结构化卡片消息（如通知、投票、按钮选择等）时，请在回复中直接输出 JSON 代码块（```json ... ```），其中 card_type 字段标明卡片类型。详见 wecom-send-template-card 技能。"
-        ].join("\n"),
+        ].filter(Boolean).join("\n\n"),
       };
     });
   },
