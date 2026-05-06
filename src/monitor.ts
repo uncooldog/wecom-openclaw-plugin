@@ -49,6 +49,7 @@ import {
   downloadAndSaveFiles,
   MediaOversizeError,
 } from "./media-handler.js";
+import { normalizeOutboundMediaUrl } from "./media-path.js";
 import { uploadAndSendMedia } from "./media-uploader.js";
 import { parseMessageContent, type MessageBody } from "./message-parser.js";
 import { sendWeComReply, sendWeComReplyNonBlocking, StreamExpiredError } from "./message-sender.js";
@@ -123,7 +124,10 @@ function buildMediaOversizeHintText(err: MediaOversizeError): string {
  * 或其它群 workspace 里的文件。用户仍可通过 mediaLocalRoots 显式追加目录。
  */
 export function getScopedMediaLocalRoots(config: WeComConfig | undefined, agentWorkspaceDir: string): string[] {
-  const roots: string[] = [path.resolve(agentWorkspaceDir)];
+  const roots: string[] = [
+    path.resolve(agentWorkspaceDir),
+    path.join(os.homedir(), ".openclaw", "media", "outbound"),
+  ];
 
   if (config?.mediaLocalRoots) {
     for (const r of config.mediaLocalRoots) {
@@ -365,9 +369,10 @@ async function sendMediaBatch(ctx: DeliverContext, mediaUrls: string[]): Promise
   );
 
   for (const mediaUrl of mediaUrls) {
+    const normalizedMediaUrl = normalizeOutboundMediaUrl(mediaUrl, agentWorkspaceDir);
     const result = await uploadAndSendMedia({
       wsClient,
-      mediaUrl,
+      mediaUrl: normalizedMediaUrl,
       chatId,
       mediaLocalRoots,
       log: (...args: any[]) => runtime.log?.(...args),
@@ -379,10 +384,10 @@ async function sendMediaBatch(ctx: DeliverContext, mediaUrls: string[]): Promise
     } else {
       state.hasMediaFailed = true;
       runtime.error?.(
-        `[wecom] Media send failed: url=${mediaUrl}, reason=${result.rejectReason || result.error}`,
+        `[wecom] Media send failed: url=${mediaUrl}, normalizedUrl=${normalizedMediaUrl}, reason=${result.rejectReason || result.error}`,
       );
       // 收集错误摘要，后续在 finishThinkingStream 中直接替换 thinking 流展示给用户
-      const summary = buildMediaErrorSummary(mediaUrl, result);
+      const summary = buildMediaErrorSummary(normalizedMediaUrl, result);
       state.mediaErrorSummary = state.mediaErrorSummary
         ? `${state.mediaErrorSummary}\n\n${summary}`
         : summary;
