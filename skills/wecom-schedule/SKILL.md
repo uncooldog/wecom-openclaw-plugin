@@ -18,7 +18,7 @@ metadata:
 ## 注意事项
 
 - 日程列表查询仅支持**当日前后 30 天**，时间格式 `YYYY-MM-DD` 或 `YYYY-MM-DD HH:MM:SS`
-- 涉及参与者 userid 时，需先使用 **wecom-contact-lookup** 技能获取；存在同名时展示候选让用户选择（禁止暴露 userid）
+- 涉及参与者 userid 时，需先使用 **wecom-contact** 技能获取；存在同名时展示候选让用户选择（禁止暴露 userid）
 - 创建/修改/取消前，先确认目标日程和参与者信息
 - `errcode != 0` 时展示错误信息；返回的 `start_time`/`end_time` 为 Unix 时间戳（秒），需转为可读格式
 - **注意时间格式转换**：接口入参使用字符串格式（如 `YYYY-MM-DD HH:MM:SS`），但返回值多为 Unix 时间戳，使用时需进行格式转换
@@ -101,7 +101,7 @@ metadata:
 
 **流程：**
 1. 解析用户意图，提取时间、标题、地点、参与人、提醒设置等信息
-2. 若涉及参与人，先通过 **wecom-contact-lookup** 查询 userid；存在同名时展示候选让用户选择
+2. 若涉及参与人，先通过 **wecom-contact** 查询 userid；存在同名时展示候选让用户选择
 3. 若用户未指定提醒，默认设置提前 15 分钟提醒（`remind_before_event_secs: 900`）
 4. 若用户说"全天"，设置 `is_whole_day: 1`，时间设为当天 00:00:00 至 23:59:59
 5. 向用户确认日程信息（标题、时间、地点、参与人等）后调用 `create_schedule`
@@ -142,7 +142,7 @@ metadata:
 - "把我后天那个技术分享的参与人里去掉刘强"
 
 **流程：**
-1. 通过 **wecom-contact-lookup** 获取目标人员 userid；存在同名时展示候选让用户选择
+1. 通过 **wecom-contact** 获取目标人员 userid；存在同名时展示候选让用户选择
 2. 通过查询工作流定位目标日程
 3. 调用 `add_schedule_attendees` 或 `del_schedule_attendees` 完成添加/移除
 
@@ -155,7 +155,7 @@ metadata:
 - "找一个明天下午大家都有空的时段，安排一个 1 小时的会议"
 
 **流程：**
-1. 通过 **wecom-contact-lookup** 获取相关人员 userid
+1. 通过 **wecom-contact** 获取相关人员 userid
 2. 调用 `check_availability` 查询指定时间范围内各用户的忙碌时段
 3. 分析所有用户的忙碌时段，计算出共同空闲时段并推荐给用户
 4. 用户确认时段后，调用 `create_schedule` 创建会议并自动添加参与人

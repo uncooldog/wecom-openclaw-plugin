@@ -23,7 +23,9 @@
     "prebuild": "npm run clean",
     "release": "node scripts/publish-all.mjs",
     "release:dry": "node scripts/publish-all.mjs --dry-run",
-    "deploy:local": "bash scripts/dev-deploy.sh"
+    "release:ci": "node scripts/publish-all.mjs --yes --restore=no",
+    "deploy:local": "bash scripts/dev-deploy.sh",
+    "deploy:local:extensions": "bash scripts/dev-deploy.sh --target=extensions"
   },
   "keywords": [
     "wecom",
@@ -68,7 +70,16 @@
     "undici": "^7.24.6",
     "zod": "^4.3.6"
   },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.28"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/node": "^22.10.0",
     "openclaw": ">=2026.3.28",
     "typescript": "^5.3.3",
     "vitest": "^4.1.1"

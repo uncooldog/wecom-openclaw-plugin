@@ -60,3 +60,37 @@
 }
 ```
 
+## 响应示例
+
+```json
+{
+    "errcode": 0,
+    "errmsg": "ok",
+    "total": -1,
+    "has_more": false,
+    "next": 0,
+    "records": [
+        {
+            "record_id": "QizwnX",
+            "create_time": "1775025981849",
+            "update_time": "1775035035706",
+            "values": {
+                "任务名称": [
+                    {
+                        "text": "完成项目需求文档",
+                        "type": "text"
+                    }
+                ],
+                "状态": [
+                    {
+                        "id": "oTBIKO",
+                        "style": 7,
+                        "text": "待开始"
+                    }
+                ]
+            }
+        }
+    ]
+}
+```
+

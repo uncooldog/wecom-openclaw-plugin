@@ -11,6 +11,7 @@
  */
 
 import { generateReqId } from "@wecom/aibot-node-sdk";
+import { fetch as undiciFetch } from "undici";
 import { DEFAULT_ACCOUNT_ID } from "../openclaw-compat.js";
 import { getWeComWebSocket } from "../state-manager.js";
 import { MCP_GET_CONFIG_CMD, MCP_CONFIG_FETCH_TIMEOUT_MS } from "../const.js";
@@ -348,12 +349,14 @@ async function sendRawJsonRpc(
 
   let response: Response;
   try {
-    response = await fetch(url, {
+    // 使用 undici 提供的 fetch，规避 Node 18.0–18.17 原生 fetch 无法自定义 User-Agent 的 bug；
+    // undici 是项目已有依赖，且在所有支持的 Node 版本上行为一致。
+    response = (await undiciFetch(url, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: controller.signal,
-    });
+    })) as unknown as Response;
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(`MCP 请求超时 (${timeoutMs}ms)`);

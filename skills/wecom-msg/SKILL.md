@@ -65,7 +65,7 @@ metadata:
 
 ### userid转username
 **流程**：
-1. 调用 `wecom-contact-lookup get_userlist` 获取用户列表
+1. 调用 `wecom-contact get_userlist` 获取用户列表
 2. 建立userid到username的映射关系
 3. **展示策略**：
    - 精确匹配：显示username
@@ -100,7 +100,7 @@ metadata:
 1. 确定时间范围（用户指定或默认最近7天）
 2. 通过 **chatid查找规则** 确定目标会话的 `chatid` 和 `chat_type`
 3. 调用 `get_message` 拉取消息列表
-4. 调用 `wecom-contact-lookup` 的 `get_userlist` 获取通讯录，建立 userid→姓名 映射
+4. 调用 `wecom-contact` 的 `get_userlist` 获取通讯录，建立 userid→姓名 映射
 5. **统计非文本消息**：遍历消息列表，统计 `msgtype` 非 `text` 的消息（image/file/voice/video）数量和类型
 6. 展示消息时将 `userid` 替换为可读姓名，格式：
    - 文本消息：`姓名 [时间]: 内容`

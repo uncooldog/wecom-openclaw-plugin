@@ -1,6 +1,6 @@
 # smartpage_create API
 
-创建智能文档（原智能主页）。支持传入多个子页面，每个子页面可指定标题、内容类型和文件路径。创建成功后返回文档访问链接和 docid。
+创建智能文档（原智能主页）。支持传入多个子页面，每个子页面可指定标题、内容类型和本地文件路径。创建成功后返回文档访问链接和 docid。
 
 ## 技能定义
 
@@ -58,7 +58,7 @@
 | pages | array | 是 | 子页面列表 |
 | pages[].page_title | string | 否 | 子页面标题 |
 | pages[].content_type | integer | 否 | 内容类型：1-Markdown，0-Text（纯文本）。**默认应传 1**，仅纯文本内容才传 0 |
-| pages[].page_filepath | string | 否 | 子页面内容对应的本地文件路径 |
+| pages[].page_filepath | string | 否 | 子页面内容对应的本地文件路径，需确保文件存在且可读 |
 
 ## ContentType 枚举
 
@@ -67,6 +67,25 @@
 | 1 | Markdown | 文件内容包含 Markdown 语法（标题、列表、链接、代码块等） |
 | 0 | Text（纯文本） | 文件内容为纯文本，不含任何 Markdown 语法 |
 
+除了标准的 markdown 格式以外，智能文档还支持扩展语法以提升表示的丰富性，包括：
+1. 背景块
+```markdown
+<card color="green">
+## 在扩展标签里面可以任意嵌套 markdown 语法
+- 背景块常用于展示重要信息
+- 颜色的使用根据需要表达的语义进行选择，卡片背景由 `color` 指定；支持 `green`, `blue`, `red`, `yellow`, `gray`, `purple`, `orange`, `cyan`, `indigo`，也支持 `dark_green`, `dark_blue`, `dark_red`, `dark_yellow`, `dark_gray`, `dark_purple`, `dark_orange`, `dark_cyan`, `dark_indigo` 等深色系。
+</card>
+```
+背景颜色推荐使用浅色背景，以完成区隔/高亮并且保持低饱和度确保正文内容的良好显示。
+2. 分栏
+使用分栏可以并列显示内容，常用于展示对比或者并列信息
+```markdown
+<grid>
+<area width-ratio="0.5">占据50%的空间</area>
+<area width-ratio="0.5">占据50%的空间</area>
+</grid>
+```
+width-ratio：子容器宽度占比，范围 0.1~1.0，所有的子容器宽度占比之和为 1
 
 ## 请求示例
 
@@ -98,10 +117,8 @@
     "url": "https://doc.weixin.qq.com/smartpage/a1_xxxxxx"
 }
 ```
-
 ## 注意事项
 
-- 响应透传 mcp 回包
 - `docid` 仅在创建时返回，后续无法再获取，务必保存
 - `page_filepath` 指向本地文件，需确保文件存在且可读
 - **`content_type` 必须与文件实际内容格式匹配**：`.md` 文件或包含 Markdown 语法的内容必须传 `1`，不要传 `0`
